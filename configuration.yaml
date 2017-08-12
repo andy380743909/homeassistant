@@ -1,0 +1,290 @@
+# Show links to resources in log and frontend
+introduction:
+# Enables the frontend
+frontend:
+# Enables configuration UI
+config:
+http:
+  # Uncomment this to add a password (recommended!)
+  api_password: asdfghjk
+  # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
+  base_url: amadman.duckdns.org:8122
+# Checks for available updates
+# Note: This component will send some information about your system to
+# the developers to assist with development of Home Assistant.
+# For more information, please see:
+# https://home-assistant.io/blog/2016/10/25/explaining-the-updater/
+updater:
+  # Optional, allows Home Assistant developers to focus on popular components.
+  # include_used_components: true
+# Discover some devices automatically
+discovery:
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+# Enables support for tracking state changes over time
+history:
+# View all events in a logbook
+logbook:
+# Track the sun
+
+# iOS component
+ios:
+
+media_player:
+  - platform: gstreamer
+  - platform: vlc
+    name: VLC player
+
+upnp:
+  external_port: 8122
+  port_mapping: true
+
+# Syslog
+notify:
+  - name: notify
+    platform: syslog
+
+sun:
+# Weather prediction
+sensor:
+  - platform: yr
+# Text to speech
+# tts:
+#   - platform: google
+# group: !include groups.yaml
+# automation: !include automations.yaml
+
+panel_custom:
+  - name: hello_panel
+    sidebar_title: Hello Panel
+    config:
+      title: Custom Panel
+
+# zwave
+zwave:
+
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
+  client_id: home-assistant-1
+  username: pi
+  password: raspberry
+
+homeassistant:
+  name: Home
+  unit_system: metric
+  latitude: 31.2358
+  longitude: 121.3990
+  time_zone: Asia/Shanghai
+  elevation: 0
+
+zone:
+  - name: Home
+    latitude: 31.2357
+    longitude: 121.3990
+    radius: 50
+    icon: mdi:home
+  - name: Office
+    latitude: 31.2184
+    longitude: 121.4178
+    radius: 50
+    icon: mdi:office
+
+
+# Example configuration.yaml entry
+weather:
+  - platform: yweather
+
+light:
+  - platform: lifx
+  # z-wave dimmer switch (http://amzn.to/2j1UEli)
+  - platform: mqtt
+    name: "Kitchen Lights"
+    state_topic: "smartthings/Kitchen/switch"
+    command_topic: "smartthings/Kitchen/switch"
+    payload_on: "on"
+    payload_off: "off"
+    brightness_state_topic: "smartthings/Kitchen/level"
+    brightness_command_topic: "smartthings/Kitchen/level"
+    brightness_scale: 99
+    brightness_value_template: '{{ value }}'
+    retain: true
+    optimistic: false
+    qos: 0
+
+device_tracker:
+  # - platform: xiaomi
+  #   host: 192.168.31.1
+  #   username: hero
+  #   password: long1986
+  - platform: nmap_tracker
+    hosts: 192.168.31.1/255
+    home_interval: 10
+  - platform: ping
+    hosts:
+      andy_iphone6splus: 192.168.31.163
+      long_bro_iphone7: 192.168.31.108
+    count: 5
+    consider_home: 00:01:00
+
+binary_sensor:
+  - platform: rpi_gpio
+    ports:
+      11: PIR Office
+      12: PIR Bedroom
+
+automation 1:
+  alias: 'Turn on the lights when I arrive home'
+  trigger:
+    platform: zone
+    entity_id: device_tracker.andy_iphone6splus
+    zone: zone.home
+    # Event is either enter or leave
+    event: enter  # or "leave"
+  action:
+    service: light.lifx_set_state
+    entity_id: light.kitchen_lights
+    data:
+      infrared: 255
+      zones: [0,5]
+      transition: 10
+      power: true
+
+
+
+automation 2:
+  # Notify me on my mobile phone of an event
+  trigger:
+    platform: sun
+    event: sunset
+    offset: -00:30
+  action:
+    # Actions are scripts so can also be a list of actions
+    - service: notify.notify
+      data:
+        message: Beautiful sunset!
+    - delay: 0:35
+    - service: notify.notify
+      data:
+        message: Oh wow you really missed something great.
+
+
+#选择频道
+input_select:
+  radio_station:
+    name: '广播频道:'
+    options:
+      - 100% NL
+      - BBC World Service
+      - Veronica
+      - Classic FM
+      - Sleep Radio
+      - Radio Art - Sleep
+      - Ambi Nature Radio
+      - Calm Radio - Sleep
+      - Dinamo.FM Sleep
+      - 89.9 The Wave
+
+#选择播放器
+  home_radio:
+    name: '播放音源:'
+    options:
+      - "VLC 播放器"
+      - "主卧播放器"
+      - "客厅播放器"
+    initial: "VLC 播放器"
+    icon: mdi:speaker-wireless
+
+#音量划杆
+input_slider:
+  volume_radio:
+    name: '音量调节'
+    icon: mdi:volume-high
+    min: 0
+    max: 1
+    step: 0.05
+
+#播放脚本
+script:
+  radio_house:
+    alias: '开始播放'
+    sequence:
+      - service: media_player.volume_set
+        data_template:
+          entity_id: >
+            {% if is_state("input_select.home_radio", "VLC 播放器") %} media_player.vlc_player
+            {% elif is_state("input_select.home_radio", "主卧播放器") %} media_player.bedroom_kodi
+            {% elif is_state("input_select.home_radio", "客厅播放器") %} media_player.livingroom_kodi
+            {% endif %}
+          volume_level: '{{  states.input_slider.volume_radio.state  }}'
+      - service: media_player.play_media
+
+        data_template:
+          entity_id: >
+            {% if is_state("input_select.home_radio", "VLC 播放器") %} media_player.vlc_player
+            {% elif is_state("input_select.home_radio", "主卧播放器") %} media_player.bedroom_kodi
+            {% elif is_state("input_select.home_radio", "客厅播放器") %} media_player.livingroom_kodi
+            {% endif %}
+          media_content_id: >
+            {% if is_state("input_select.radio_station", "100% NL") %}
+            {% elif is_state("input_select.radio_station", "BBC World Service") %} http://bbcwssc.ic.llnwd.net/stream/bbcwssc_mp1_ws-eieuk
+            {% elif is_state("input_select.radio_station", "Veronica") %} http://8543.live.streamtheworld.com/VERONICACMP3
+            {% elif is_state("input_select.radio_station", "Classic FM") %} http://19143.live.streamtheworld.com/CLASSICFM_SC
+            {% elif is_state("input_select.radio_station", "Sleep Radio") %} http://37.59.28.208:8722/stream
+            {% elif is_state("input_select.radio_station", "Radio Art - Sleep") %}
+            {% elif is_state("input_select.radio_station", "Ambi Nature Radio") %} http://94.23.252.14:8067/stream
+            {% elif is_state("input_select.radio_station", "Calm Radio - Sleep") %} http://streams.calmradio.com/api/39/128/stream
+            {% elif is_state("input_select.radio_station", "Dinamo.FM Sleep") %} http://channels.dinamo.fm/sleep-aac
+            {% elif is_state("input_select.radio_station", "89.9 The Wave") %} http://chns.streamon.fm/
+            {% endif %}
+          media_content_type: 'music'
+
+
+automation:
+  - alias: 'Set Radio Volume'
+    trigger:
+      - platform: state
+        entity_id: input_slider.volume_radio
+    action:
+      - service: media_player.volume_set
+        data_template:
+          entity_id: >
+            {% if is_state("input_select.home_radio", "VLC 播放器") %} media_player.vlc_player
+            {% elif is_state("input_select.home_radio", "主卧播放器") %} media_player.bedroom_kodi
+            {% elif is_state("input_select.home_radio", "客厅播放器") %} media_player.livingroom_kodi
+            {% endif %}
+          volume_level: '{{  states.input_slider.volume_radio.state  }}'
+
+      - service: media_player.play_media
+        data_template:
+          entity_id: >
+            {% if is_state("input_select.home_radio", "VLC 播放器") %} media_player.vlc_player
+            {% elif is_state("input_select.home_radio", "主卧播放器") %} media_player.bedroom_kodi
+            {% elif is_state("input_select.home_radio", "客厅播放器") %} media_player.livingroom_kodi
+            {% endif %}
+          media_content_id: >
+            {% if is_state("input_select.radio_station", "100% NL") %}
+            {% elif is_state("input_select.radio_station", "BBC World Service") %} http://bbcwssc.ic.llnwd.net/stream/bbcwssc_mp1_ws-eieuk
+            {% elif is_state("input_select.radio_station", "Veronica") %} http://8543.live.streamtheworld.com/VERONICACMP3
+            {% elif is_state("input_select.radio_station", "Classic FM") %} http://19143.live.streamtheworld.com/CLASSICFM_SC
+            {% elif is_state("input_select.radio_station", "Sleep Radio") %} http://37.59.28.208:8722/stream
+            {% elif is_state("input_select.radio_station", "Radio Art - Sleep") %}
+            {% elif is_state("input_select.radio_station", "Ambi Nature Radio") %} http://94.23.252.14:8067/stream
+            {% elif is_state("input_select.radio_station", "Calm Radio - Sleep") %} http://streams.calmradio.com/api/39/128/stream
+            {% elif is_state("input_select.radio_station", "Dinamo.FM Sleep") %} http://channels.dinamo.fm/sleep-aac
+            {% elif is_state("input_select.radio_station", "89.9 The Wave") %} http://chns.streamon.fm/
+            {% endif %}
+          media_content_type: 'music'
+
+
+#播放面板分组
+group:
+  play_media_radio:
+    view: no
+    name: '播放面板'
+    icon: mdi:view-dashboard
+    entities:
+      - input_select.radio_station
+      - input_select.home_radio
+      - input_slider.volume_radio
+      - script.radio_house
