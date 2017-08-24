@@ -72,6 +72,16 @@ notify:
 sensor:
   - platform: yr
 
+# 时间
+  - platform: time_date
+    display_options:
+      - 'time'
+      - 'date'
+      - 'date_time'
+      - 'time_date'
+      - 'time_utc'
+      - 'beat'
+
 # Broadlink RM Pro
 
   - platform: broadlink
@@ -347,6 +357,18 @@ automation:
 
 #播放面板分组
 group:
+  date_time:
+    view: no
+    name: '日期时间'
+    icon: mdi:clock
+    entities:
+      - sensor.date
+      - sensor.date__time
+      - sensor.time
+      - sensor.internet_time
+      - sensor.time__date
+      - sensor.time_utc
+
   play_media_radio:
     view: no
     name: '播放面板'
@@ -357,6 +379,13 @@ group:
       - input_slider.volume_radio
       - script.radio_house
 
+  andy_iphone:
+    view: no
+    name: Andy's iPhone
+    entities:
+      - device_tracker.andy_iphone6splus
+      - sensor.andy_iphone6splus_battery_level
+      - sensor.andy_iphone6splus_battery_state
 
   rasp_pi_monitor:
     view: no
@@ -383,7 +412,7 @@ group:
     name: Andy's BedRoom
     icon: mdi:hotel
     entities:
-      - device_tracker.andy_iphone6splus
+      - group.andy_iphone
       - group.rasp_pi_monitor
       - group.play_media_radio
       - sensor.broadlink_sensor_temperature
