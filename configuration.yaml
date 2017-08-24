@@ -1,14 +1,22 @@
 # Show links to resources in log and frontend
 introduction:
+
+
 # Enables the frontend
 frontend:
+
+
 # Enables configuration UI
 config:
+
+
 http:
   # Uncomment this to add a password (recommended!)
   api_password: asdfghjk
   # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
   base_url: amadman.duckdns.org:8122
+
+
 # Checks for available updates
 # Note: This component will send some information about your system to
 # the developers to assist with development of Home Assistant.
@@ -17,42 +25,92 @@ http:
 updater:
   # Optional, allows Home Assistant developers to focus on popular components.
   # include_used_components: true
+
+
 # Discover some devices automatically
 discovery:
+
+
 # Allows you to issue voice commands from the frontend in enabled browsers
 conversation:
+
+
 # Enables support for tracking state changes over time
 history:
+
+
 # View all events in a logbook
 logbook:
+
+
 # Track the sun
+sun:
+
 
 # iOS component
 ios:
+
 
 media_player:
   - platform: gstreamer
   - platform: vlc
     name: VLC player
 
-upnp:
-  external_port: 8122
-  port_mapping: true
+
+# upnp:
+#  external_port: 8122
+#  port_mapping: true
+
 
 # Syslog
 notify:
   - name: notify
     platform: syslog
 
-sun:
+
 # Weather prediction
 sensor:
   - platform: yr
+
+# Broadlink RM Pro
+
+  - platform: broadlink
+    host: 192.168.31.111
+    mac: 'ff:ff:ff:ff:ff:ff'
+    update_interval: 60
+    monitored_conditions:
+      - 'temperature'
+
+
+  - platform: systemmonitor
+    resources:
+      - type: disk_use_percent
+        arg: /home
+      - type: memory_free
+      - type: load_5m
+      - type: last_boot
+      - type: since_last_boot
+
+
+  - platform: cpuspeed
+
+
+  - platform: command_line
+    name: CPU Temperature
+    command: "cat /sys/class/thermal/thermal_zone0/temp"
+    # If errors occur, remove degree symbol below
+    unit_of_measurement: "°C"
+    value_template: '{{ value | multiply(0.001) }}'
+
+
+
+
 # Text to speech
 # tts:
 #   - platform: google
 # group: !include groups.yaml
 # automation: !include automations.yaml
+
 
 panel_custom:
   - name: hello_panel
@@ -60,8 +118,10 @@ panel_custom:
     config:
       title: Custom Panel
 
+
 # zwave
 zwave:
+
 
 mqtt:
   broker: 127.0.0.1
@@ -70,6 +130,7 @@ mqtt:
   username: pi
   password: raspberry
 
+
 homeassistant:
   name: Home
   unit_system: metric
@@ -77,6 +138,7 @@ homeassistant:
   longitude: 121.3990
   time_zone: Asia/Shanghai
   elevation: 0
+
 
 zone:
   - name: Home
@@ -117,6 +179,7 @@ device_tracker:
   #   host: 192.168.31.1
   #   username: hero
   #   password: long1986
+  - platform: owntracks
   - platform: nmap_tracker
     hosts: 192.168.31.1/255
     home_interval: 10
@@ -127,11 +190,13 @@ device_tracker:
     count: 5
     consider_home: 00:01:00
 
+
 binary_sensor:
   - platform: rpi_gpio
     ports:
       11: PIR Office
       12: PIR Bedroom
+
 
 automation 1:
   alias: 'Turn on the lights when I arrive home'
@@ -142,14 +207,16 @@ automation 1:
     # Event is either enter or leave
     event: enter  # or "leave"
   action:
-    service: light.lifx_set_state
-    entity_id: light.kitchen_lights
-    data:
-      infrared: 255
-      zones: [0,5]
-      transition: 10
-      power: true
-
+    - service: light.lifx_set_state
+      entity_id: light.kitchen_lights
+      data:
+        infrared: 255
+        zones: [0,5]
+        transition: 10
+        power: true
+    - service: notify.notify
+      data:
+        message: Andy arrive Home
 
 
 automation 2:
@@ -167,6 +234,7 @@ automation 2:
     - service: notify.notify
       data:
         message: Oh wow you really missed something great.
+
 
 
 #选择频道
@@ -288,3 +356,50 @@ group:
       - input_select.home_radio
       - input_slider.volume_radio
       - script.radio_house
+
+
+  rasp_pi_monitor:
+    view: no
+    name: '树莓派'
+    entities:
+      - sensor.cpu_speed
+      - sensor.cpu_temperature
+      - sensor.average_load_5m
+      - sensor.ram_free
+      - sensor.disk_use_home
+      - sensor.since_last_boot
+      - sensor.last_boot
+
+
+  livingroom:
+    view: yes
+    name: LivingRoom
+    icon: mdi:sofa
+    entities:
+      - device_tracker.xiaomi_router
+
+  andy_bedroom:
+    view: yes
+    name: Andy's BedRoom
+    icon: mdi:hotel
+    entities:
+      - device_tracker.andy_iphone6splus
+      - group.rasp_pi_monitor
+      - group.play_media_radio
+      - sensor.broadlink_sensor_temperature
+      - media_player.vlc_player
+
+
+  kitchen:
+    view: yes
+    name: Kitchen
+    icon: mdi:pot
+    entities:
+      - light.kitchen_lights
+
+  bathroom:
+    view: yes
+    name: BathRoom
+    icon: mdi:scale-bathroom
+    entities:
+      - device_tracker.xiaomi_router
