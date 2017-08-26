@@ -61,6 +61,10 @@ media_player:
 #  external_port: 8122
 #  port_mapping: true
 
+hdmi_cec:
+  devices:
+    Pulse Eight: 1.0.0.0
+
 
 # Syslog
 notify:
@@ -121,7 +125,6 @@ sensor:
 # group: !include groups.yaml
 # automation: !include automations.yaml
 
-
 panel_custom:
   - name: hello_panel
     sidebar_title: Hello Panel
@@ -167,6 +170,7 @@ zone:
 weather:
   - platform: yweather
 
+
 light:
   - platform: lifx
   # z-wave dimmer switch (http://amzn.to/2j1UEli)
@@ -208,6 +212,18 @@ binary_sensor:
       12: PIR Bedroom
 
 
+automation 0:
+  alias: 'NowTime'
+  trigger:
+    platform: time
+    # Matches every hour
+    minutes: 0
+    seconds: 00
+  action:
+    - service: notify.notify
+      data:
+        message: '该喝水了'
+
 automation 1:
   alias: 'Turn on the lights when I arrive home'
   trigger:
@@ -231,6 +247,7 @@ automation 1:
 
 automation 2:
   # Notify me on my mobile phone of an event
+  alias: 'Sunset'
   trigger:
     platform: sun
     event: sunset
